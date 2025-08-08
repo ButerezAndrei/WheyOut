@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="com.nothing.ketchum.permission.ENABLE"/>
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.WheyOut">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.WheyOut">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Full Example: Registers a Glyph toy with complete metadata for enhanced functionality -->
+        <!-- Replace "com.nothing.demo.TestToyOne" with your service class -->
+        <service android:name=".glyphs.Calories"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.nothing.glyph.TOY"/>
+            </intent-filter>
+
+            <!-- Required: Ensures the toy appears in the Glyph Toys manager list -->
+            <meta-data
+                android:name="com.nothing.glyph.toy.name"
+                android:resource="@string/toy_name_one"/>  <!-- Replace with your string resource -->
+
+            <!-- Required: Allows users to preview your toy in the settings -->
+<!--            <meta-data-->
+<!--                android:name="com.nothing.glyph.toy.image"-->
+<!--                android:resource="@drawable/img_toy_preview_one"/>  &lt;!&ndash; Replace with your image resource &ndash;&gt;-->
+
+            <!-- Optional: Provides a brief description of your toy -->
+<!--            <meta-data-->
+<!--                android:name="com.nothing.glyph.toy.summary"-->
+<!--                android:resource="@string/toy_summary" />  &lt;!&ndash; Replace with your string resource &ndash;&gt;-->
+
+            <!-- Optional: Links to a detailed introduction page for your toy -->
+            <meta-data
+                android:name="com.nothing.glyph.toy.introduction"
+                android:value="com.yourPackage.yourToyIntroduceActivity" />  <!-- Replace with your activity class -->
+
+            <!-- Optional: Enables long press functionality, default is 0 -->
+            <meta-data
+                android:name="com.nothing.glyph.toy.longpress"
+                android:value="1"/>
+
+            <!-- Optional: Indicates support for Always-On Display (AOD) -->
+            <meta-data
+                android:name="com.nothing.glyph.toy.aod_support"
+                android:value="1"/>
+        </service>
+    </application>
+
+</manifest>
