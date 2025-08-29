@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">WheyOut</string>
-    <string name="toy_name_one">Calories</string>
+    <string name="toy_name_calories">Calories</string>
+    <string name="toy_name_hello">Hello World</string>
 </resources>

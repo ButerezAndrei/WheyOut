@@ -11,11 +11,10 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlin.math.sqrt
 import kotlin.random.Random
 
 
-class Calories : GlyphMatrixService("Calories") {
+class HelloWorld: GlyphMatrixService("Calories") {
 
     private val backgroundScope = CoroutineScope(Dispatchers.IO)
 
@@ -26,7 +25,7 @@ class Calories : GlyphMatrixService("Calories") {
     )
     val textBuilder = GlyphMatrixObject.Builder()
     val text: GlyphMatrixObject? = textBuilder
-        .setText("Calories")
+        .setText("Hello")
         .setPosition(0, 9)
         .build()
     val rainBuilder = GlyphMatrixObject.Builder()

@@ -1,33 +1,161 @@
 package com.bituwy.wheyout
 
+import android.annotation.SuppressLint
+import android.content.Context
+import android.content.Intent
+import android.icu.util.Calendar
+import android.net.Uri
+import android.nfc.Tag
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContract
+import androidx.activity.result.registerForActivityResult
+import androidx.annotation.Nullable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.Button
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color.Companion.Black
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.health.connect.client.HealthConnectClient
+import androidx.health.connect.client.PermissionController
+import androidx.health.connect.client.permission.HealthPermission
+import androidx.health.connect.client.records.NutritionRecord
+import androidx.health.connect.client.request.ReadRecordsRequest
+import androidx.health.connect.client.response.ReadRecordsResponse
+import androidx.health.connect.client.time.TimeRangeFilter
+import androidx.lifecycle.lifecycleScope
 import com.bituwy.wheyout.ui.theme.WheyOutTheme
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import java.time.Clock
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.seconds
 
+val PERMISSIONS = setOf(
+    HealthPermission.getReadPermission(NutritionRecord::class),
+    HealthPermission.PERMISSION_READ_HEALTH_DATA_HISTORY
+)
+val TAG = "MainActivity"
 class MainActivity : ComponentActivity() {
+    private lateinit var healthConnectClient: HealthConnectClient
+    private lateinit var requestPermission: ActivityResultLauncher<Set<String>>
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             WheyOutTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                Scaffold(
+                    modifier = Modifier.fillMaxSize(),
+                    floatingActionButton = {
+                        FloatingActionButton(
+                            onClick = {
+                                Log.i(TAG, "Button clicked")
+                                lifecycleScope.launch {
+                                    checkPermissionsAndRun()
+                                }
+                            }
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "Permissions")
+                        }
+                    }
+                ) { innerPadding ->
                     Greeting(
                         name = "Android",
                         modifier = Modifier.padding(innerPadding)
                     )
+
                 }
             }
         }
+
+        healthConnectClient = getHealthConnectClient(this)
+
+        val requestPermissionActivityContract = PermissionController.createRequestPermissionResultContract()
+        requestPermission = registerForActivityResult(requestPermissionActivityContract) { granted ->
+            if (granted.containsAll(PERMISSIONS)) {
+                logHealthData()
+            } else {
+                Log.i(TAG, "Lack of required permissions")
+            }
+        }
+   }
+
+    suspend fun fetchHealthData(): ReadRecordsResponse<NutritionRecord> {
+        val instant = Instant.now().minus(10, ChronoUnit.DAYS)
+        val timeRange = TimeRangeFilter.after(instant)
+        val response = healthConnectClient.readRecords(
+            ReadRecordsRequest(
+                NutritionRecord::class,
+                timeRangeFilter = timeRange
+            )
+        )
+        return response
     }
+
+    fun logHealthData() {
+        lifecycleScope.launch {
+            val healthData = fetchHealthData()
+            for (record in healthData.records) {
+                Log.i(TAG, "Name: ${record.name.toString()} Calories: ${record.energy?.inKilocalories.toString()}")
+            }
+        }
+    }
+
+    suspend fun checkPermissionsAndRun() {
+        val granted = healthConnectClient.permissionController.getGrantedPermissions()
+        Log.i(TAG, granted.toString())
+        if (granted.containsAll(PERMISSIONS)) {
+            // Permissions already granted; proceed with inserting or reading data
+            Log.i(TAG, "Permissions already granted")
+            logHealthData()
+        } else {
+            Log.i(TAG, "Asking for permissions")
+            requestPermission.launch(PERMISSIONS)
+        }
+    }
+}
+
+
+fun getHealthConnectClient(context: Context): HealthConnectClient {
+    val availabilityStatus = HealthConnectClient.getSdkStatus(context)
+
+     if (availabilityStatus == HealthConnectClient.SDK_UNAVAILABLE) {
+       Log.i(TAG, "SDK UNAVAILABLE")
+    }
+
+    val providerPackageName = "com.google.android.apps.healthdata"
+    if (availabilityStatus == HealthConnectClient.SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED) {
+        val uriString = "market://details?id=$providerPackageName&url=healthconnect%3A%2F%2Fonboarding"
+        context.startActivity(
+            Intent(Intent.ACTION_VIEW).apply {
+                setPackage("com.android.vending")
+                data = Uri.parse(uriString)
+                putExtra("overlay", true)
+                putExtra("callerId", context.packageName)
+            }
+        )
+    }
+
+    return HealthConnectClient.getOrCreate(context)
 }
 
 @Composable
