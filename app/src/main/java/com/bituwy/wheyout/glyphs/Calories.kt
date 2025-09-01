@@ -2,6 +2,7 @@ package com.bituwy.wheyout.glyphs
 
 import android.content.Context
 import com.bituwy.wheyout.GlyphMatrixService
+import com.bituwy.wheyout.model.CaloriesTracker
 import com.nothing.ketchum.GlyphMatrixFrame
 import com.nothing.ketchum.GlyphMatrixManager
 import com.nothing.ketchum.GlyphMatrixObject
@@ -13,6 +14,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.math.sqrt
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.hours
 
 
 class Calories : GlyphMatrixService("Calories") {
@@ -25,14 +27,20 @@ class Calories : GlyphMatrixService("Calories") {
     private val rainScreen = IntArray(screenLength * screenLength
     )
     val textBuilder = GlyphMatrixObject.Builder()
-    val text: GlyphMatrixObject? = textBuilder
-        .setText("Calories")
+    var text: GlyphMatrixObject.Builder = textBuilder
+        .setText(" ")
         .setPosition(0, 9)
-        .build()
     val rainBuilder = GlyphMatrixObject.Builder()
     var rain: GlyphMatrixObject? = rainBuilder.build()
     val frameBuilder = GlyphMatrixFrame.Builder()
     var frame: GlyphMatrixFrame? = null
+
+    lateinit var caloriesTracker: CaloriesTracker
+
+    suspend fun setRemainingCalories() {
+        val remainingCalories = caloriesTracker.remaining(24.hours).toInt()
+        text.setText(remainingCalories.toString())
+    }
 
     fun updateRain() {
         advanceDroplets()
@@ -41,7 +49,7 @@ class Calories : GlyphMatrixService("Calories") {
             .setRawArray(rainScreen)
             .build()
         frame = frameBuilder
-            .addTop(text)
+            .addTop(text.build())
             .addMid(rain)
             .build(applicationContext)
     }
@@ -72,14 +80,17 @@ class Calories : GlyphMatrixService("Calories") {
         context: Context,
         glyphMatrixManager: GlyphMatrixManager
     ) {
+        caloriesTracker = CaloriesTracker(applicationContext)
         generateDroplets()
+
         frame = frameBuilder
-            .addTop(text)
+            .addTop(text.build())
             .addMid(rainScreen)
             .build(applicationContext)
 
         glyphMatrixManager.setMatrixFrame(frame?.render())
         backgroundScope.launch {
+            setRemainingCalories()
             while (isActive) {
                 updateRain()
                 uiScope.launch {
