@@ -10,34 +10,40 @@ import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.response.ReadRecordsResponse
 import androidx.health.connect.client.time.TimeRangeFilter
 import java.time.Instant
+import java.time.LocalDateTime
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.days
 import kotlin.time.toJavaDuration
 
 const val TAG = "CaloriesTracker"
 //TODO: Handle checking permissions
-//TODO: Figure out why AOD doesnt work for this eventhough it works for HelloWorld Glyph
+//TODO: Figure out why AOD doesn't work for this even though it works for HelloWorld Glyph
 class CaloriesTracker(val context: Context) {
     val target = 1600.0
 
-    suspend fun remaining(forTheLast: Duration): Double {
-        return target - consumed(1.days)
-    }
+    suspend fun remaining(from: LocalDateTime): Double {
+        val timeRage = TimeRangeFilter.after(from)
 
-    suspend fun consumed(forTheLast: Duration): Double {
+        return target - consumed(timeRage)
+    }
+    suspend fun remaining(forTheLast: Duration): Double {
         val temporalAmount = forTheLast.toJavaDuration()
         val startOfPeriod = Instant.now().minus(temporalAmount)
-        val interval = TimeRangeFilter.after(startOfPeriod)
-        val nutritionRecords = fetchNutrition(interval)
+        val timeRange = TimeRangeFilter.after(startOfPeriod)
+
+        return target - consumed(timeRange)
+    }
+
+    suspend fun consumed(between: TimeRangeFilter): Double {
+        val nutritionRecords = fetchNutrition(between)
         return nutritionRecords.records.sumOf { it.energy?.inKilocalories ?: 0.0 }
     }
 
-    suspend fun fetchNutrition(forInterval: TimeRangeFilter): ReadRecordsResponse<NutritionRecord> {
+    suspend fun fetchNutrition(between: TimeRangeFilter): ReadRecordsResponse<NutritionRecord> {
         val healthConnectClient = getHealthConnectClient(context)
         return healthConnectClient.readRecords(
             ReadRecordsRequest(
                 NutritionRecord::class,
-                forInterval
+                between
             )
         )
     }

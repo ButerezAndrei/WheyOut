@@ -12,10 +12,8 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlin.math.sqrt
+import java.time.LocalDate
 import kotlin.random.Random
-import kotlin.time.Duration.Companion.hours
-
 
 class Calories : GlyphMatrixService("Calories") {
 
@@ -38,7 +36,9 @@ class Calories : GlyphMatrixService("Calories") {
     lateinit var caloriesTracker: CaloriesTracker
 
     suspend fun setRemainingCalories() {
-        val remainingCalories = caloriesTracker.remaining(24.hours).toInt()
+        // TODO: Make the start of day configurable
+        val startOfDay = LocalDate.now().atTime(4, 0)
+        val remainingCalories = caloriesTracker.remaining(startOfDay).toInt()
         text.setText(remainingCalories.toString())
     }
 
