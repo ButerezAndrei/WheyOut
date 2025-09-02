@@ -6,6 +6,7 @@ import com.bituwy.wheyout.model.CaloriesTracker
 import com.nothing.ketchum.GlyphMatrixFrame
 import com.nothing.ketchum.GlyphMatrixManager
 import com.nothing.ketchum.GlyphMatrixObject
+import com.nothing.ketchum.GlyphMatrixUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -27,7 +28,6 @@ class Calories : GlyphMatrixService("Calories") {
     val textBuilder = GlyphMatrixObject.Builder()
     var text: GlyphMatrixObject.Builder = textBuilder
         .setText(" ")
-        .setPosition(0, 9)
     val rainBuilder = GlyphMatrixObject.Builder()
     var rain: GlyphMatrixObject? = rainBuilder.build()
     val frameBuilder = GlyphMatrixFrame.Builder()
@@ -39,7 +39,10 @@ class Calories : GlyphMatrixService("Calories") {
         // TODO: Make the start of day configurable
         val startOfDay = LocalDate.now().atTime(4, 0)
         val remainingCalories = caloriesTracker.remaining(startOfDay).toInt()
-        text.setText(remainingCalories.toString())
+        text.setText(remainingCalories.toString() , 1)
+        val (horizontalCenterOffset, verticalCenterOffset) = getCenteredTextOffsets(remainingCalories.toString())
+        
+        text.setPosition(horizontalCenterOffset, verticalCenterOffset)
     }
 
     fun updateRain() {
@@ -100,6 +103,16 @@ class Calories : GlyphMatrixService("Calories") {
                 delay(30)
             }
         }
+    }
+
+    fun getCenteredTextOffsets(text: String) : Pair<Int, Int>{
+        val letters = GlyphMatrixUtils.getLetterConfigs(text, applicationContext, null)
+        val horizontalLength = GlyphMatrixUtils.getLetterMaxLength(letters, false)
+        val verticalLength = letters.first().height
+        val horizontalCenterOffset = (24 - horizontalLength)/2
+        val verticalCenterOffset = (24 - verticalLength)/2
+
+        return horizontalCenterOffset to verticalCenterOffset
     }
 
     override fun performOnServiceDisconnected(context: Context) {
