@@ -19,17 +19,10 @@ import kotlin.random.Random
 class Calories : GlyphMatrixService("Calories") {
 
     private val backgroundScope = CoroutineScope(Dispatchers.IO)
-
     private val uiScope = CoroutineScope(Dispatchers.Main)
-
-    private val screenLength = 25
-    private val rainScreen = IntArray(screenLength * screenLength
-    )
+    private val rainScreen = IntArray(SCREEN_LENGTH * SCREEN_LENGTH)
     val textBuilder = GlyphMatrixObject.Builder()
-    var text: GlyphMatrixObject.Builder = textBuilder
-        .setText(" ")
     val rainBuilder = GlyphMatrixObject.Builder()
-    var rain: GlyphMatrixObject? = rainBuilder.build()
     val frameBuilder = GlyphMatrixFrame.Builder()
     var frame: GlyphMatrixFrame? = null
 
@@ -39,31 +32,29 @@ class Calories : GlyphMatrixService("Calories") {
         // TODO: Make the start of day configurable
         val startOfDay = LocalDate.now().atTime(4, 0)
         val remainingCalories = caloriesTracker.remaining(startOfDay).toInt()
-        text.setText(remainingCalories.toString() , 1)
         val (horizontalCenterOffset, verticalCenterOffset) = getCenteredTextOffsets(remainingCalories.toString())
-        
-        text.setPosition(horizontalCenterOffset, verticalCenterOffset)
+
+        val remainingText = textBuilder.setText(remainingCalories.toString())
+                                       .setPosition(horizontalCenterOffset, verticalCenterOffset)
+        frameBuilder.addTop(remainingText.build())
     }
 
     fun updateRain() {
         advanceDroplets()
         if (Random.nextInt(100) < 8) generateDroplets()
-        rain = rainBuilder
+        val rainFrame = rainBuilder
             .setRawArray(rainScreen)
             .build()
-        frame = frameBuilder
-            .addTop(text.build())
-            .addMid(rain)
-            .build(applicationContext)
+        if (rainFrame != null) frameBuilder.addLow(rainFrame)
     }
 
     fun advanceDroplets() {
         var dropletPosition = 0
         var oldDropletPosition = 0
-        for (row in 25 downTo 2) {
-            for (column in 1..25) {
-                oldDropletPosition = ((row-1)*25) - column
-                dropletPosition = (row*25) - column
+        for (row in SCREEN_LENGTH downTo 2) {
+            for (column in 1..SCREEN_LENGTH) {
+                oldDropletPosition = ((row-1)*SCREEN_LENGTH) - column
+                dropletPosition = (row*SCREEN_LENGTH) - column
                 if(rainScreen[oldDropletPosition] != 0) {
                     rainScreen[dropletPosition] = rainScreen[oldDropletPosition]
                     rainScreen[oldDropletPosition] = (rainScreen[oldDropletPosition].toDouble() * 0.8).toInt()
@@ -74,7 +65,7 @@ class Calories : GlyphMatrixService("Calories") {
 
     fun generateDroplets() {
         rainScreen.forEachIndexed { index, value ->
-            if (index > 24) return@forEachIndexed
+            if (index > SCREEN_LENGTH.dec()) return@forEachIndexed
             if (Random.nextInt(100) < 8) rainScreen[index] = 2047
         }
     }
@@ -87,19 +78,21 @@ class Calories : GlyphMatrixService("Calories") {
         generateDroplets()
 
         frame = frameBuilder
-            .addTop(text.build())
-            .addMid(rainScreen)
+            .addLow(rainScreen)
             .build(applicationContext)
 
         glyphMatrixManager.setMatrixFrame(frame?.render())
+
         backgroundScope.launch {
             setRemainingCalories()
             while (isActive) {
                 updateRain()
+                frame = frameBuilder.build(applicationContext)
+
                 uiScope.launch {
                     glyphMatrixManager.setMatrixFrame(frame?.render())
                 }
-                // wait a bit
+
                 delay(30)
             }
         }
@@ -109,13 +102,17 @@ class Calories : GlyphMatrixService("Calories") {
         val letters = GlyphMatrixUtils.getLetterConfigs(text, applicationContext, null)
         val horizontalLength = GlyphMatrixUtils.getLetterMaxLength(letters, false)
         val verticalLength = letters.first().height
-        val horizontalCenterOffset = (24 - horizontalLength)/2
-        val verticalCenterOffset = (24 - verticalLength)/2
+        val horizontalCenterOffset = (SCREEN_LENGTH.dec() - horizontalLength)/2
+        val verticalCenterOffset = (SCREEN_LENGTH.dec() - verticalLength)/2
 
         return horizontalCenterOffset to verticalCenterOffset
     }
 
     override fun performOnServiceDisconnected(context: Context) {
         backgroundScope.cancel()
+    }
+
+    private companion object {
+        private const val SCREEN_LENGTH = 25
     }
 }
