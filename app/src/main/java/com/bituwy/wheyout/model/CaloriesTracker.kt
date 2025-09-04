@@ -33,6 +33,12 @@ class CaloriesTracker(val context: Context) {
         return target - consumed(timeRange)
     }
 
+    suspend fun consumed(from: LocalDateTime): Double {
+        val timeRange = TimeRangeFilter.after(from)
+
+        return consumed(timeRange)
+    }
+
     suspend fun consumed(between: TimeRangeFilter): Double {
         val nutritionRecords = fetchNutrition(between)
         return nutritionRecords.records.sumOf { it.energy?.inKilocalories ?: 0.0 }
