@@ -25,12 +25,9 @@ class CaloriesTracker(val context: Context) {
 
         return target - consumed(timeRage)
     }
-    suspend fun remaining(forTheLast: Duration): Double {
-        val temporalAmount = forTheLast.toJavaDuration()
-        val startOfPeriod = Instant.now().minus(temporalAmount)
-        val timeRange = TimeRangeFilter.after(startOfPeriod)
 
-        return target - consumed(timeRange)
+    suspend fun percentConsumed(from: LocalDateTime): Double {
+        return consumed(from)/target
     }
 
     suspend fun consumed(from: LocalDateTime): Double {

@@ -15,7 +15,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.time.LocalDate
-import kotlin.math.pow
+import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.random.Random
 class Calories : GlyphMatrixService("Calories") {
@@ -32,14 +32,13 @@ class Calories : GlyphMatrixService("Calories") {
         // TODO: Make the start of day configurable
         val startOfDay = LocalDate.now().atTime(4, 0)
         val remainingCalories = caloriesTracker.remaining(startOfDay).toInt()
-        val (horizontalCenterOffset, verticalCenterOffset) = getCenteredTextOffsets(remainingCalories.toString())
 
+        val (horizontalCenterOffset, verticalCenterOffset) = getCenteredTextOffsets(remainingCalories.toString())
         val remainingText = textBuilder.setText(remainingCalories.toString())
                                        .setPosition(horizontalCenterOffset, verticalCenterOffset)
-        val consumed = caloriesTracker.consumed(startOfDay).toInt()
 
-        // TODO: Improve the interface of the calories target in order to not repeat calcs
-        circlePercent = consumed/caloriesTracker.target
+        circlePercent = caloriesTracker.percentConsumed(startOfDay)
+
         frameBuilder.addTop(remainingText.build())
     }
 
@@ -74,15 +73,17 @@ class Calories : GlyphMatrixService("Calories") {
             Point(4, 3), Point(5, 2), Point(6, 2), Point(7, 1),
             Point(8, 1), Point(9, 0), Point(10, 0), Point(11, 0)
         )
-        val rawArray = IntArray(SCREEN_LENGTH * SCREEN_LENGTH)
-
-        for (i in 0..(circleProgressSteps.size * percentDone).roundToInt().dec()) {
+        val renderedProgressCircle = IntArray(SCREEN_LENGTH * SCREEN_LENGTH)
+        val maxProgressSize = min(
+            circleProgressSteps.size * percentDone, circleProgressSteps.size.toDouble(),
+        )
+        for (i in 0..maxProgressSize.roundToInt().dec()) {
             val column = circleProgressSteps[i].x
             val row = circleProgressSteps[i].y
-            rawArray[column + (row*SCREEN_LENGTH)] = 2047
+            renderedProgressCircle[column + (row*SCREEN_LENGTH)] = 2047
         }
 
-        return rawArray
+        return renderedProgressCircle
     }
 
     fun updateRain() {
