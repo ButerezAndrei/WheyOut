@@ -2,55 +2,60 @@ package com.bituwy.wheyout.glyphs
 
 import android.content.Context
 import android.graphics.Point
+import android.os.Handler
+import android.os.Looper
 import com.bituwy.wheyout.GlyphMatrixService
+import com.bituwy.wheyout.helpers.GlyphMatrixHelper
 import com.bituwy.wheyout.model.CaloriesTracker
 import com.nothing.ketchum.GlyphMatrixFrame
+import com.nothing.ketchum.GlyphMatrixFrameWithMarquee
 import com.nothing.ketchum.GlyphMatrixManager
 import com.nothing.ketchum.GlyphMatrixObject
-import com.nothing.ketchum.GlyphMatrixUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import kotlin.math.min
 import kotlin.math.roundToInt
-import kotlin.random.Random
 class Calories : GlyphMatrixService("Calories") {
+    private lateinit var caloriesTracker: CaloriesTracker
+    private lateinit var glyphHelper: GlyphMatrixHelper
 
     private val backgroundScope = CoroutineScope(Dispatchers.IO)
     private val uiScope = CoroutineScope(Dispatchers.Main)
     private val rainScreen = IntArray(SCREEN_LENGTH * SCREEN_LENGTH)
     val textBuilder = GlyphMatrixObject.Builder()
     val frameBuilder = GlyphMatrixFrame.Builder()
+    var circleAnimated = false
+    var circleAnimationStep = 0.0
+    var circlePercent = 0.0
+    val handler = Handler(Looper.getMainLooper())
+    val tickRunnable: Runnable = Runnable { animationUpdate() }
 
-    lateinit var caloriesTracker: CaloriesTracker
+    lateinit var frameWithMarquee : GlyphMatrixFrameWithMarquee
 
     suspend fun setRemainingCalories() {
         // TODO: Make the start of day configurable
-        val startOfDay = LocalDate.now().atTime(4, 0)
-        val remainingCalories = caloriesTracker.remaining(startOfDay).toInt()
+        val startOfDay = LocalDate.now().atTime(5, 0)
+        val remainingCalories: Int
+        try {
+            remainingCalories = caloriesTracker.remaining(startOfDay).toInt()
+            circlePercent = caloriesTracker.percentConsumed(startOfDay)
+        } catch (e: SecurityException) {
+            frameBuilder.addTop(glyphHelper.buildCenteredText(SCREEN_LENGTH,"No Permissions", GlyphMatrixHelper.CenterOptions.VERTICAL))
+            return
+        }
 
-        val (horizontalCenterOffset, verticalCenterOffset) = getCenteredTextOffsets(remainingCalories.toString())
-        val remainingText = textBuilder.setText(remainingCalories.toString())
-                                       .setPosition(horizontalCenterOffset, verticalCenterOffset)
-
-        circlePercent = caloriesTracker.percentConsumed(startOfDay)
-
-        frameBuilder.addTop(remainingText.build())
+        val remainingCaloriesText = glyphHelper.buildCenteredText(SCREEN_LENGTH, "${remainingCalories} kcal", GlyphMatrixHelper.CenterOptions.VERTICAL)
+        frameBuilder.addTop(remainingCaloriesText)
     }
 
-
-    var circleAnimationStep = 0.0
-    var circlePercent = 0.0
-
     fun advanceCircle() {
-        if (circleAnimationStep + 0.007 >= circlePercent) return
-        circleAnimationStep += 0.007
+        if (circleAnimationStep + 0.01 >= circlePercent) return
+        circleAnimationStep += 0.01
         val circleScreen = generateCircleProgress(circleAnimationStep)
-        frameBuilder.addMid(circleScreen)
+        frameWithMarquee.setMid(circleScreen)
     }
 
     fun generateCircleProgress(percentDone: Double): IntArray {
@@ -86,74 +91,49 @@ class Calories : GlyphMatrixService("Calories") {
         return renderedProgressCircle
     }
 
-    fun updateRain() {
-        advanceDroplets()
-        if (Random.nextInt(100) < 8) generateDroplets()
-    }
-
-    fun advanceDroplets() {
-        var dropletPosition = 0
-        var oldDropletPosition = 0
-        for (row in SCREEN_LENGTH downTo 2) {
-            for (column in 1..SCREEN_LENGTH) {
-                oldDropletPosition = ((row-1)*SCREEN_LENGTH) - column
-                dropletPosition = (row*SCREEN_LENGTH) - column
-                if(rainScreen[oldDropletPosition] != 0) {
-                    rainScreen[dropletPosition] = rainScreen[oldDropletPosition]
-                    rainScreen[oldDropletPosition] = (rainScreen[oldDropletPosition].toDouble() * 0.8).toInt()
-                }
-            }
-        }
-    }
-
-    fun generateDroplets() {
-        rainScreen.forEachIndexed { index, value ->
-            if (index > SCREEN_LENGTH.dec()) return@forEachIndexed
-            if (Random.nextInt(100) < 8) rainScreen[index] = 2047
-        }
-    }
-
     override fun performOnServiceConnected(
         context: Context,
         glyphMatrixManager: GlyphMatrixManager
     ) {
         caloriesTracker = CaloriesTracker(applicationContext)
-        generateDroplets()
-
-        var frame = frameBuilder
-            //TODO: Refactor the effects to be modular
-//            .addLow(rainScreen)
-            .build(applicationContext)
-
-        glyphMatrixManager.setMatrixFrame(frame.render())
+        glyphHelper = GlyphMatrixHelper(applicationContext)
 
         backgroundScope.launch {
             setRemainingCalories()
-            while (isActive) {
-//                updateRain()
-                advanceCircle()
-                frame = frameBuilder.build(applicationContext)
+            frameWithMarquee = frameBuilder.buildWithMarquee(
+                applicationContext,
+                handler,
+                50,
+                1
+            ) { updatedFrame -> glyphMatrixManager.setMatrixFrame(updatedFrame) }
 
-                uiScope.launch {
-                    glyphMatrixManager.setMatrixFrame(frame.render())
-                }
-
-                delay(30)
-            }
+            frameWithMarquee.startMarquee()
+            startAnimation()
         }
     }
 
-    fun getCenteredTextOffsets(text: String) : Pair<Int, Int>{
-        val letters = GlyphMatrixUtils.getLetterConfigs(text, applicationContext, null)
-        val horizontalLength = GlyphMatrixUtils.getLetterMaxLength(letters, false)
-        val verticalLength = letters.first().height
-        val horizontalCenterOffset = (SCREEN_LENGTH.dec() - horizontalLength)/2
-        val verticalCenterOffset = (SCREEN_LENGTH.dec() - verticalLength)/2
+    //TODO: Remove reliance on the GlyphMatrixFrameMarquee for rendering
+    fun startAnimation() {
+        handler.removeCallbacks(tickRunnable)
+        handler.postDelayed(tickRunnable, 30)
+        circleAnimated = true
+    }
 
-        return horizontalCenterOffset to verticalCenterOffset
+    fun animationUpdate() {
+        if (circleAnimated) {
+            advanceCircle()
+            handler.postDelayed(tickRunnable, 30)
+        }
+    }
+
+    fun stopAnimation(){
+        handler.removeCallbacks(tickRunnable)
+        circleAnimated = false
     }
 
     override fun performOnServiceDisconnected(context: Context) {
+        frameWithMarquee.stopMarquee()
+        stopAnimation()
         backgroundScope.cancel()
     }
 

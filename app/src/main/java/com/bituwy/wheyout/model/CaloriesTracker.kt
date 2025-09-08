@@ -5,14 +5,12 @@ import android.content.Intent
 import android.net.Uri
 import android.util.Log
 import androidx.health.connect.client.HealthConnectClient
+import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.NutritionRecord
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.response.ReadRecordsResponse
 import androidx.health.connect.client.time.TimeRangeFilter
-import java.time.Instant
 import java.time.LocalDateTime
-import kotlin.time.Duration
-import kotlin.time.toJavaDuration
 
 const val TAG = "CaloriesTracker"
 //TODO: Handle checking permissions
@@ -43,6 +41,7 @@ class CaloriesTracker(val context: Context) {
 
     suspend fun fetchNutrition(between: TimeRangeFilter): ReadRecordsResponse<NutritionRecord> {
         val healthConnectClient = getHealthConnectClient(context)
+
         return healthConnectClient.readRecords(
             ReadRecordsRequest(
                 NutritionRecord::class,
@@ -50,7 +49,16 @@ class CaloriesTracker(val context: Context) {
             )
         )
     }
+
+    public companion object {
+        val PERMISSIONS = setOf(
+            HealthPermission.getReadPermission(NutritionRecord::class),
+            HealthPermission.PERMISSION_READ_HEALTH_DATA_HISTORY,
+            HealthPermission.PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND
+        )
+    }
 }
+
 fun getHealthConnectClient(context: Context): HealthConnectClient {
     val availabilityStatus = HealthConnectClient.getSdkStatus(context)
 
