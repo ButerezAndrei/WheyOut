@@ -10,7 +10,6 @@ import com.bituwy.wheyout.model.CaloriesTracker
 import com.nothing.ketchum.GlyphMatrixFrame
 import com.nothing.ketchum.GlyphMatrixFrameWithMarquee
 import com.nothing.ketchum.GlyphMatrixManager
-import com.nothing.ketchum.GlyphMatrixObject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -23,9 +22,6 @@ class Calories : GlyphMatrixService("Calories") {
     private lateinit var glyphHelper: GlyphMatrixHelper
 
     private val backgroundScope = CoroutineScope(Dispatchers.IO)
-    private val uiScope = CoroutineScope(Dispatchers.Main)
-    private val rainScreen = IntArray(SCREEN_LENGTH * SCREEN_LENGTH)
-    val textBuilder = GlyphMatrixObject.Builder()
     val frameBuilder = GlyphMatrixFrame.Builder()
     var circleAnimated = false
     var circleAnimationStep = 0.0
