@@ -14,7 +14,6 @@ import androidx.health.connect.client.time.TimeRangeFilter
 import java.time.LocalDateTime
 
 const val TAG = "CaloriesTracker"
-//TODO: Figure out why AOD doesn't work for this even though it works for HelloWorld Glyph
 class CaloriesTracker(val context: Context) {
     companion object {
         val PERMISSIONS = mapOf<String, String>(
