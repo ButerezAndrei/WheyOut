@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Point
 import android.os.Handler
 import android.os.Looper
+import androidx.core.os.postDelayed
 import com.bituwy.wheyout.GlyphMatrixService
 import com.bituwy.wheyout.helpers.GlyphMatrixHelper
 import com.bituwy.wheyout.model.CaloriesTracker
@@ -17,19 +18,27 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import kotlin.math.min
 import kotlin.math.roundToInt
+
 class Calories : GlyphMatrixService("Calories") {
+    private companion object {
+        private const val SCREEN_LENGTH = 25
+        private const val TICK_RATE = 30
+    }
+
     private lateinit var caloriesTracker: CaloriesTracker
     private lateinit var glyphHelper: GlyphMatrixHelper
 
     private val backgroundScope = CoroutineScope(Dispatchers.IO)
-    val frameBuilder = GlyphMatrixFrame.Builder()
+    val textFrameBuilder = GlyphMatrixFrame.Builder()
+    private lateinit var textFrame: GlyphMatrixFrameWithMarquee
+    val animationFrameBuilder = GlyphMatrixFrame.Builder()
+    private lateinit var matrixManager: GlyphMatrixManager
     var circleAnimated = false
     var circleAnimationStep = 0.0
     var circlePercent = 0.0
     val handler = Handler(Looper.getMainLooper())
     val tickRunnable: Runnable = Runnable { animationUpdate() }
 
-    lateinit var frameWithMarquee : GlyphMatrixFrameWithMarquee
 
     suspend fun setRemainingCalories() {
         // TODO: Make the start of day configurable
@@ -39,19 +48,19 @@ class Calories : GlyphMatrixService("Calories") {
             remainingCalories = caloriesTracker.remaining(startOfDay).toInt()
             circlePercent = caloriesTracker.percentConsumed(startOfDay)
         } catch (e: SecurityException) {
-            frameBuilder.addTop(glyphHelper.buildCenteredText(SCREEN_LENGTH,"No Permissions", GlyphMatrixHelper.CenterOptions.VERTICAL))
+            textFrameBuilder.addTop(glyphHelper.buildCenteredText(SCREEN_LENGTH,"No Permissions", GlyphMatrixHelper.CenterOptions.VERTICAL))
             return
         }
 
         val remainingCaloriesText = glyphHelper.buildCenteredText(SCREEN_LENGTH, "${remainingCalories} kcal", GlyphMatrixHelper.CenterOptions.VERTICAL)
-        frameBuilder.addTop(remainingCaloriesText)
+        textFrameBuilder.addTop(remainingCaloriesText)
     }
 
     fun advanceCircle() {
         if (circleAnimationStep + 0.01 >= circlePercent) return
         circleAnimationStep += 0.01
         val circleScreen = generateCircleProgress(circleAnimationStep)
-        frameWithMarquee.setMid(circleScreen)
+        animationFrameBuilder.addMid(circleScreen)
     }
 
     fun generateCircleProgress(percentDone: Double): IntArray {
@@ -93,32 +102,44 @@ class Calories : GlyphMatrixService("Calories") {
     ) {
         caloriesTracker = CaloriesTracker(applicationContext)
         glyphHelper = GlyphMatrixHelper(applicationContext)
+        matrixManager = glyphMatrixManager
 
         backgroundScope.launch {
             setRemainingCalories()
-            frameWithMarquee = frameBuilder.buildWithMarquee(
+            textFrame = textFrameBuilder.buildWithMarquee(
                 applicationContext,
                 handler,
-                50,
+                TICK_RATE,
                 1
-            ) { updatedFrame -> glyphMatrixManager.setMatrixFrame(updatedFrame) }
+            ) { updatedFrame ->
+                animationFrameBuilder.addLow(updatedFrame)
+            }
 
-            frameWithMarquee.startMarquee()
+            startTextMarquee()
             startAnimation()
         }
     }
 
-    //TODO: Remove reliance on the GlyphMatrixFrameMarquee for rendering
+    fun startTextMarquee() {
+        // We're delaying the text marquee in order for the text to be readable instead of scrolling from the start
+        animationFrameBuilder.addLow(textFrame.render())
+        handler.postDelayed(
+            Runnable { textFrame.startMarquee() },
+            700
+        )
+    }
+
     fun startAnimation() {
         handler.removeCallbacks(tickRunnable)
-        handler.postDelayed(tickRunnable, 30)
+        handler.postDelayed(tickRunnable, TICK_RATE.toLong())
         circleAnimated = true
     }
 
     fun animationUpdate() {
         if (circleAnimated) {
             advanceCircle()
-            handler.postDelayed(tickRunnable, 30)
+            matrixManager.setMatrixFrame(animationFrameBuilder.build(applicationContext).render())
+            handler.postDelayed(tickRunnable, TICK_RATE.toLong())
         }
     }
 
@@ -128,12 +149,9 @@ class Calories : GlyphMatrixService("Calories") {
     }
 
     override fun performOnServiceDisconnected(context: Context) {
-        frameWithMarquee.stopMarquee()
+        textFrame.stopMarquee()
         stopAnimation()
         backgroundScope.cancel()
     }
 
-    private companion object {
-        private const val SCREEN_LENGTH = 25
-    }
 }

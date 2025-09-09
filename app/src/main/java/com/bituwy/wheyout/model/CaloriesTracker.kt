@@ -13,7 +13,7 @@ import androidx.health.connect.client.time.TimeRangeFilter
 import java.time.LocalDateTime
 
 const val TAG = "CaloriesTracker"
-//TODO: Handle checking permissions
+//TODO: Change catching the SecurityException when permission missing and have granular user info on the screen
 //TODO: Figure out why AOD doesn't work for this even though it works for HelloWorld Glyph
 class CaloriesTracker(val context: Context) {
     val target = 1600.0
