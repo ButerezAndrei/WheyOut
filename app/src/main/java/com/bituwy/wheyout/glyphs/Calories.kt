@@ -48,12 +48,17 @@ class Calories : GlyphMatrixService("Calories") {
             remainingCalories = caloriesTracker.remaining(startOfDay).toInt()
             circlePercent = caloriesTracker.percentConsumed(startOfDay)
         } catch (e: SecurityException) {
-            textFrameBuilder.addTop(glyphHelper.buildCenteredText(SCREEN_LENGTH,"No Permissions", GlyphMatrixHelper.CenterOptions.VERTICAL))
+            val text = glyphHelper.buildCenteredText(
+                SCREEN_LENGTH,
+                e.message ?: "No Permission",
+                GlyphMatrixHelper.CenterOptions.VERTICAL
+            )
+            textFrame.setTop(text)
             return
         }
 
         val remainingCaloriesText = glyphHelper.buildCenteredText(SCREEN_LENGTH, "${remainingCalories} kcal", GlyphMatrixHelper.CenterOptions.VERTICAL)
-        textFrameBuilder.addTop(remainingCaloriesText)
+        textFrame.setTop(remainingCaloriesText)
     }
 
     fun advanceCircle() {
@@ -103,18 +108,16 @@ class Calories : GlyphMatrixService("Calories") {
         caloriesTracker = CaloriesTracker(applicationContext)
         glyphHelper = GlyphMatrixHelper(applicationContext)
         matrixManager = glyphMatrixManager
-
+        textFrame = textFrameBuilder.buildWithMarquee(
+            applicationContext,
+            handler,
+            TICK_RATE,
+            1
+        ) { updatedFrame ->
+            animationFrameBuilder.addLow(updatedFrame)
+        }
         backgroundScope.launch {
             setRemainingCalories()
-            textFrame = textFrameBuilder.buildWithMarquee(
-                applicationContext,
-                handler,
-                TICK_RATE,
-                1
-            ) { updatedFrame ->
-                animationFrameBuilder.addLow(updatedFrame)
-            }
-
             startTextMarquee()
             startAnimation()
         }
@@ -149,7 +152,7 @@ class Calories : GlyphMatrixService("Calories") {
     }
 
     override fun performOnServiceDisconnected(context: Context) {
-        textFrame.stopMarquee()
+        if (this::textFrame.isInitialized) textFrame.stopMarquee()
         stopAnimation()
         backgroundScope.cancel()
     }

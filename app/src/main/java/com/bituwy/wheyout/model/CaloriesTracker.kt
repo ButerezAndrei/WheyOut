@@ -1,5 +1,6 @@
 package com.bituwy.wheyout.model
 
+import android.app.RecoverableSecurityException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -13,19 +14,25 @@ import androidx.health.connect.client.time.TimeRangeFilter
 import java.time.LocalDateTime
 
 const val TAG = "CaloriesTracker"
-//TODO: Change catching the SecurityException when permission missing and have granular user info on the screen
 //TODO: Figure out why AOD doesn't work for this even though it works for HelloWorld Glyph
 class CaloriesTracker(val context: Context) {
+    companion object {
+        val PERMISSIONS = mapOf<String, String>(
+            "Nutrition" to HealthPermission.getReadPermission(NutritionRecord::class),
+            "Health History" to HealthPermission.PERMISSION_READ_HEALTH_DATA_HISTORY,
+            "Health Background" to HealthPermission.PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND
+        )
+    }
     val target = 1600.0
+
+    suspend fun percentConsumed(from: LocalDateTime): Double {
+        return consumed(from)/target
+    }
 
     suspend fun remaining(from: LocalDateTime): Double {
         val timeRage = TimeRangeFilter.after(from)
 
         return target - consumed(timeRage)
-    }
-
-    suspend fun percentConsumed(from: LocalDateTime): Double {
-        return consumed(from)/target
     }
 
     suspend fun consumed(from: LocalDateTime): Double {
@@ -41,20 +48,16 @@ class CaloriesTracker(val context: Context) {
 
     suspend fun fetchNutrition(between: TimeRangeFilter): ReadRecordsResponse<NutritionRecord> {
         val healthConnectClient = getHealthConnectClient(context)
-
+        val grantedPermissions = healthConnectClient.permissionController.getGrantedPermissions()
+        val missingPermissionsMessages = PERMISSIONS.filterValues { !grantedPermissions.contains(it) }.keys
+        if (missingPermissionsMessages.any()) {
+            throw SecurityException(missingPermissionsMessages.joinToString(prefix = "Missing Permissions: "))
+        }
         return healthConnectClient.readRecords(
             ReadRecordsRequest(
                 NutritionRecord::class,
                 between
             )
-        )
-    }
-
-    public companion object {
-        val PERMISSIONS = setOf(
-            HealthPermission.getReadPermission(NutritionRecord::class),
-            HealthPermission.PERMISSION_READ_HEALTH_DATA_HISTORY,
-            HealthPermission.PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND
         )
     }
 }

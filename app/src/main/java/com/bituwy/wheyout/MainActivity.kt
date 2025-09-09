@@ -70,7 +70,7 @@ class MainActivity : ComponentActivity() {
 
         val requestPermissionActivityContract = PermissionController.createRequestPermissionResultContract()
         requestPermission = registerForActivityResult(requestPermissionActivityContract) { granted ->
-            if (granted.containsAll(CaloriesTracker.PERMISSIONS)) {
+            if (granted.containsAll(CaloriesTracker.PERMISSIONS.values)) {
                 logHealthData()
             } else {
                 Log.i(TAG, "Lack of required permissions")
@@ -102,13 +102,13 @@ class MainActivity : ComponentActivity() {
     suspend fun checkPermissionsAndRun() {
         val granted = healthConnectClient.permissionController.getGrantedPermissions()
         Log.i(TAG, granted.toString())
-        if (granted.containsAll(CaloriesTracker.PERMISSIONS)) {
+        if (granted.containsAll(CaloriesTracker.PERMISSIONS.values.toSet())) {
             // Permissions already granted; proceed with inserting or reading data
             Log.i(TAG, "Permissions already granted")
             logHealthData()
         } else {
             Log.i(TAG, "Asking for permissions")
-            requestPermission.launch(CaloriesTracker.PERMISSIONS)
+            requestPermission.launch(CaloriesTracker.PERMISSIONS.values.toSet())
         }
     }
 }
