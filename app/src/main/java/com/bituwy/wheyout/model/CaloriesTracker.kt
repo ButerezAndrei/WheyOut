@@ -22,6 +22,7 @@ class CaloriesTracker(val context: Context) {
             "Health Background" to HealthPermission.PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND
         )
     }
+    //TODO: Make the target configurable from the main activity
     val target = 1600.0
 
     suspend fun percentConsumed(from: LocalDateTime): Double {

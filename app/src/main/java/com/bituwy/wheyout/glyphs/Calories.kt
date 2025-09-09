@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.Point
 import android.os.Handler
 import android.os.Looper
-import androidx.core.os.postDelayed
 import com.bituwy.wheyout.GlyphMatrixService
 import com.bituwy.wheyout.helpers.GlyphMatrixHelper
 import com.bituwy.wheyout.model.CaloriesTracker
@@ -16,13 +15,19 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.LocalDateTime
 import kotlin.math.min
 import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.days
+import kotlin.time.toJavaDuration
 
 class Calories : GlyphMatrixService("Calories") {
     private companion object {
         private const val SCREEN_LENGTH = 25
         private const val TICK_RATE = 30
+
+        // TODO: Make the hour when a new counting day starts configurable
+        private const val HOUR_OF_NEW_DAY = 3
     }
 
     private lateinit var caloriesTracker: CaloriesTracker
@@ -39,11 +44,14 @@ class Calories : GlyphMatrixService("Calories") {
     val handler = Handler(Looper.getMainLooper())
     val tickRunnable: Runnable = Runnable { animationUpdate() }
 
-
     suspend fun setRemainingCalories() {
-        // TODO: Make the start of day configurable
-        val startOfDay = LocalDate.now().atTime(5, 0)
         val remainingCalories: Int
+        val dateNow = LocalDate.now()
+        val startOfDay = if (LocalDateTime.now().hour < HOUR_OF_NEW_DAY) {
+            dateNow.minus(1.days.toJavaDuration()).atTime(HOUR_OF_NEW_DAY, 0)
+        } else {
+            dateNow.atTime(HOUR_OF_NEW_DAY, 0)
+        }
         try {
             remainingCalories = caloriesTracker.remaining(startOfDay).toInt()
             circlePercent = caloriesTracker.percentConsumed(startOfDay)
