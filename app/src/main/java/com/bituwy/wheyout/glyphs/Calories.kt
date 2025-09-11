@@ -16,6 +16,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.days
@@ -48,7 +49,7 @@ class Calories : GlyphMatrixService("Calories") {
         val remainingCalories: Int
         val dateNow = LocalDate.now()
         val startOfDay = if (LocalDateTime.now().hour < HOUR_OF_NEW_DAY) {
-            dateNow.minus(1.days.toJavaDuration()).atTime(HOUR_OF_NEW_DAY, 0)
+            dateNow.minus(1, ChronoUnit.DAYS).atTime(HOUR_OF_NEW_DAY, 0)
         } else {
             dateNow.atTime(HOUR_OF_NEW_DAY, 0)
         }
@@ -65,7 +66,11 @@ class Calories : GlyphMatrixService("Calories") {
             return
         }
 
-        val remainingCaloriesText = glyphHelper.buildCenteredText(SCREEN_LENGTH, "${remainingCalories} kcal", GlyphMatrixHelper.CenterOptions.VERTICAL)
+        val remainingCaloriesText = glyphHelper.buildCenteredText(
+            SCREEN_LENGTH,
+            "${remainingCalories} kcal",
+            GlyphMatrixHelper.CenterOptions.VERTICAL
+        )
         textFrame.setTop(remainingCaloriesText)
     }
 
