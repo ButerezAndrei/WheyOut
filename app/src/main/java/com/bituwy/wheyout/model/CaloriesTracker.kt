@@ -13,7 +13,7 @@ import androidx.health.connect.client.response.ReadRecordsResponse
 import androidx.health.connect.client.time.TimeRangeFilter
 import java.time.LocalDateTime
 
-class CaloriesTracker private constructor (val context: Context, val nutritionRecords: ReadRecordsResponse<NutritionRecord>) {
+class CaloriesTracker private constructor (val nutritionRecords: ReadRecordsResponse<NutritionRecord>) {
 
     //TODO: Make the target configurable from the main activity
     val target = 1600.0
@@ -51,7 +51,7 @@ class CaloriesTracker private constructor (val context: Context, val nutritionRe
 
         suspend fun create(context: Context, from: LocalDateTime): CaloriesTracker {
             val nutritionRecords = fetchNutrition(context,TimeRangeFilter.after(from))
-            return CaloriesTracker(context, nutritionRecords)
+            return CaloriesTracker(nutritionRecords)
         }
 
         fun getHealthConnectClient(context: Context): HealthConnectClient {
