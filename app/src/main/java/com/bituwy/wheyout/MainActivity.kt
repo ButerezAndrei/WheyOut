@@ -25,15 +25,17 @@ import androidx.health.connect.client.response.ReadRecordsResponse
 import androidx.health.connect.client.time.TimeRangeFilter
 import androidx.lifecycle.lifecycleScope
 import com.bituwy.wheyout.model.CaloriesTracker
-import com.bituwy.wheyout.model.getHealthConnectClient
+import com.bituwy.wheyout.model.CaloriesTracker.Companion.getHealthConnectClient
 import com.bituwy.wheyout.ui.theme.WheyOutTheme
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
 
-val TAG = "MainActivity"
 class MainActivity : ComponentActivity() {
+    companion object {
+        val TAG = "MainActivity"
+    }
     private lateinit var healthConnectClient: HealthConnectClient
     private lateinit var requestPermission: ActivityResultLauncher<Set<String>>
 

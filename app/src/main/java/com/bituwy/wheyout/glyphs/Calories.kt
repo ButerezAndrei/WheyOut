@@ -19,16 +19,16 @@ import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import kotlin.math.min
 import kotlin.math.roundToInt
-import kotlin.time.Duration.Companion.days
-import kotlin.time.toJavaDuration
 
 class Calories : GlyphMatrixService("Calories") {
     private companion object {
         private const val SCREEN_LENGTH = 25
         private const val TICK_RATE = 30
 
-        // TODO: Make the hour when a new counting day starts configurable
-        private const val HOUR_OF_NEW_DAY = 3
+        // TODO: Make the offset of when we switch over displaying the new day configurable
+        // This delays the new day display until offset hour is past
+        // i.e if offset is 3 and we are at 2 on the next day we'll display the previous day stats
+        private const val DISPLAY_HOUR_OFFSET = 3
     }
 
     private lateinit var caloriesTracker: CaloriesTracker
@@ -47,15 +47,19 @@ class Calories : GlyphMatrixService("Calories") {
 
     suspend fun setRemainingCalories() {
         val remainingCalories: Int
+        val nutritionalValues: Map<String, Double>
         val dateNow = LocalDate.now()
-        val startOfDay = if (LocalDateTime.now().hour < HOUR_OF_NEW_DAY) {
-            dateNow.minus(1, ChronoUnit.DAYS).atTime(HOUR_OF_NEW_DAY, 0)
+        val startOfDay = if (LocalDateTime.now().hour < DISPLAY_HOUR_OFFSET) {
+            dateNow.minus(1, ChronoUnit.DAYS).atTime(0, 0)
         } else {
-            dateNow.atTime(HOUR_OF_NEW_DAY, 0)
+            dateNow.atTime(0, 0)
         }
         try {
-            remainingCalories = caloriesTracker.remaining(startOfDay).toInt()
-            circlePercent = caloriesTracker.percentConsumed(startOfDay)
+            caloriesTracker = CaloriesTracker.create(applicationContext, startOfDay)
+            remainingCalories = caloriesTracker.remaining().toInt()
+            circlePercent = caloriesTracker.percentConsumed()
+            nutritionalValues = caloriesTracker.nutritionalValues()
+
         } catch (e: SecurityException) {
             val text = glyphHelper.buildCenteredText(
                 SCREEN_LENGTH,
@@ -68,7 +72,7 @@ class Calories : GlyphMatrixService("Calories") {
 
         val remainingCaloriesText = glyphHelper.buildCenteredText(
             SCREEN_LENGTH,
-            "${remainingCalories} kcal",
+            "${remainingCalories} kcal ${nutritionalValues["proteins"]}p ${nutritionalValues["carbs"]}c ${nutritionalValues["fats"]}f",
             GlyphMatrixHelper.CenterOptions.VERTICAL
         )
         textFrame.setTop(remainingCaloriesText)
@@ -118,7 +122,6 @@ class Calories : GlyphMatrixService("Calories") {
         context: Context,
         glyphMatrixManager: GlyphMatrixManager
     ) {
-        caloriesTracker = CaloriesTracker(applicationContext)
         glyphHelper = GlyphMatrixHelper(applicationContext)
         matrixManager = glyphMatrixManager
         textFrame = textFrameBuilder.buildWithMarquee(

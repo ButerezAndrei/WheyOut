@@ -22,7 +22,6 @@ class GlyphMatrixHelper(val context: Context){
             CenterOptions.HORIZONTAL -> verticalCenterOffset = 0
         }
 
-
         return textBuilder
                 .setText(text, 1)
                 .setPosition(horizontalCenterOffset, verticalCenterOffset)
