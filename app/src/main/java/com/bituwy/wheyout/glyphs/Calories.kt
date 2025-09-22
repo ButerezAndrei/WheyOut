@@ -72,7 +72,7 @@ class Calories : GlyphMatrixService("Calories") {
 
         val remainingCaloriesText = glyphHelper.buildCenteredText(
             SCREEN_LENGTH,
-            "${remainingCalories} kcal ${nutritionalValues["proteins"]}p ${nutritionalValues["carbs"]}c ${nutritionalValues["fats"]}f",
+            "${remainingCalories} kcal ${nutritionalValues["proteins"]?.toInt()}p ${nutritionalValues["carbs"]?.toInt()}}c ${nutritionalValues["fats"]?.toInt()}}f",
             GlyphMatrixHelper.CenterOptions.VERTICAL
         )
         textFrame.setTop(remainingCaloriesText)
@@ -162,7 +162,7 @@ class Calories : GlyphMatrixService("Calories") {
         }
     }
 
-    fun stopAnimation(){
+    fun stopAnimation() {
         handler.removeCallbacks(tickRunnable)
         circleAnimated = false
     }
