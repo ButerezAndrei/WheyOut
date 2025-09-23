@@ -54,6 +54,9 @@
                 android:resource="@string/toy_name_calories"/>  <!-- Replace with your string resource -->
 
             <meta-data
+                android:name="com.nothing.glyph.toy.image"
+                android:resource="@drawable/glyph_matrix_calories_preview"/>
+            <meta-data
                 android:name="com.nothing.glyph.toy.introduction"
                 android:value="com.yourPackage.yourToyIntroduceActivity" />  <!-- Replace with your activity class -->
 
