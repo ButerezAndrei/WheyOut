@@ -43,7 +43,7 @@
             </intent-filter>
         </activity-alias>
 
-        <service android:name=".glyphs.Calories"
+        <service android:name=".glyphs.CaloriesGlyph"
             android:exported="true">
             <intent-filter>
                 <action android:name="com.nothing.glyph.TOY"/>
@@ -68,7 +68,7 @@
                 android:name="com.nothing.glyph.toy.aod_support"
                 android:value="1"/>
         </service>
-        <service android:name=".glyphs.HelloWorld"
+        <service android:name=".glyphs.WeightGlyph"
             android:exported="true">
             <intent-filter>
                 <action android:name="com.nothing.glyph.TOY"/>
@@ -76,7 +76,7 @@
 
             <meta-data
                 android:name="com.nothing.glyph.toy.name"
-                android:resource="@string/toy_name_hello"/>  <!-- Replace with your string resource -->
+                android:resource="@string/toy_name_weight"/>  <!-- Replace with your string resource -->
 
             <meta-data
                 android:name="com.nothing.glyph.toy.introduction"

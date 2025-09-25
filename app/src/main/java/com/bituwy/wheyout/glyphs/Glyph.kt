@@ -1,4 +1,4 @@
-package com.bituwy.wheyout
+package com.bituwy.wheyout.glyphs
 
 import android.app.Service
 import android.content.ComponentName
@@ -14,7 +14,7 @@ import com.nothing.ketchum.Glyph
 import com.nothing.ketchum.GlyphMatrixManager
 import com.nothing.ketchum.GlyphToy
 
-abstract class GlyphMatrixService(private val tag: String) : Service() {
+abstract class Glyph(private val tag: String) : Service() {
     private val buttonPressedHandler = object : Handler(Looper.getMainLooper()) {
 
         override fun handleMessage(msg: Message) {
@@ -94,7 +94,7 @@ abstract class GlyphMatrixService(private val tag: String) : Service() {
     open fun onTouchPointReleased() {}
 
     private companion object {
-        private val LOG_TAG = GlyphMatrixService::class.java.simpleName
+        private val LOG_TAG = Glyph::class.java.simpleName
         private const val KEY_DATA = "data"
     }
 

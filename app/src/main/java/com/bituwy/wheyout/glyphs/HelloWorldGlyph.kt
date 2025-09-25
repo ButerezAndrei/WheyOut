@@ -1,7 +1,6 @@
 package com.bituwy.wheyout.glyphs
 
 import android.content.Context
-import com.bituwy.wheyout.GlyphMatrixService
 import com.nothing.ketchum.GlyphMatrixFrame
 import com.nothing.ketchum.GlyphMatrixManager
 import com.nothing.ketchum.GlyphMatrixObject
@@ -14,7 +13,7 @@ import kotlinx.coroutines.launch
 import kotlin.random.Random
 
 
-class HelloWorld: GlyphMatrixService("Calories") {
+class HelloWorldGlyph: Glyph("Calories") {
 
     private val backgroundScope = CoroutineScope(Dispatchers.IO)
 

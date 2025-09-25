@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.Point
 import android.os.Handler
 import android.os.Looper
-import com.bituwy.wheyout.GlyphMatrixService
 import com.bituwy.wheyout.helpers.GlyphMatrixHelper
 import com.bituwy.wheyout.model.CaloriesTracker
 import com.nothing.ketchum.GlyphMatrixFrame
@@ -20,10 +19,11 @@ import java.time.temporal.ChronoUnit
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-class Calories : GlyphMatrixService("Calories") {
+class CaloriesGlyph(
+    val glyphAnimator: GlyphAnimator = GlyphAnimator()
+) : Glyph("Calories"), Animatable by glyphAnimator {
     private companion object {
         private const val SCREEN_LENGTH = 25
-        private const val TICK_RATE = 30
 
         // TODO: Make the offset of when we switch over displaying the new day configurable
         // This delays the new day display until offset hour is past
@@ -42,8 +42,6 @@ class Calories : GlyphMatrixService("Calories") {
     var circleAnimated = false
     var circleAnimationStep = 0.0
     var circlePercent = 0.0
-    val handler = Handler(Looper.getMainLooper())
-    val tickRunnable: Runnable = Runnable { animationUpdate() }
 
     suspend fun setRemainingCalories() {
         val remainingCalories: Int
@@ -126,8 +124,8 @@ class Calories : GlyphMatrixService("Calories") {
         matrixManager = glyphMatrixManager
         textFrame = textFrameBuilder.buildWithMarquee(
             applicationContext,
-            handler,
-            TICK_RATE,
+            animationHandler,
+            tickRate ,
             1
         ) { updatedFrame ->
             animationFrameBuilder.addLow(updatedFrame)
@@ -142,28 +140,29 @@ class Calories : GlyphMatrixService("Calories") {
     fun startTextMarquee() {
         // We're delaying the text marquee in order for the text to be readable instead of scrolling from the start
         animationFrameBuilder.addLow(textFrame.render())
-        handler.postDelayed(
+        animationHandler.postDelayed(
             Runnable { textFrame.startMarquee() },
             700
         )
     }
 
-    fun startAnimation() {
-        handler.removeCallbacks(tickRunnable)
-        handler.postDelayed(tickRunnable, TICK_RATE.toLong())
+    override fun startAnimation() {
+        glyphAnimator.startAnimation()
         circleAnimated = true
     }
 
-    fun animationUpdate() {
+    override fun onAnimationUpdate() {
+        // TODO: Double check that animationHandler is the one implemented in glypAnimator or do i need to use glypAnimator.animationHandler throughout the code
+        // TODO: I think we can move even more of the animation logic into the GlyphAnimator
         if (circleAnimated) {
             advanceCircle()
             matrixManager.setMatrixFrame(animationFrameBuilder.build(applicationContext).render())
-            handler.postDelayed(tickRunnable, TICK_RATE.toLong())
+            animationHandler.postDelayed(tickRunnable, tickRate.toLong())
         }
     }
 
-    fun stopAnimation() {
-        handler.removeCallbacks(tickRunnable)
+    override fun stopAnimation() {
+        glyphAnimator.stopAnimation()
         circleAnimated = false
     }
 
