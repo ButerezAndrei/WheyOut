@@ -84,6 +84,7 @@ class CaloriesGlyph(
     }
 
     fun generateCircleProgress(percentDone: Double): IntArray {
+        //TODO: Move this at the instance level as it's reallocated each time
         val circleProgressSteps = arrayOf(
             Point(12, 0), Point(13, 0), Point(14, 0), Point(15, 0),
             Point(16, 1), Point(17, 1), Point(18, 2), Point(19, 2),
