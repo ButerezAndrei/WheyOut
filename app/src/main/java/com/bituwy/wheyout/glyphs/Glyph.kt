@@ -46,6 +46,10 @@ abstract class Glyph(private val tag: String) : Service() {
     var glyphMatrixManager: GlyphMatrixManager? = null
         private set
 
+    val animationHandler = Handler(Looper.getMainLooper())
+    val tickRunnable = Runnable { onAnimationUpdate() }
+    val tickRate = 30
+
     private val gmmCallback = object : GlyphMatrixManager.Callback {
         override fun onServiceConnected(p0: ComponentName?) {
             glyphMatrixManager?.let { gmm ->
@@ -92,6 +96,21 @@ abstract class Glyph(private val tag: String) : Service() {
     open fun onTouchPointPressed() {}
     open fun onTouchPointLongPress() {}
     open fun onTouchPointReleased() {}
+
+
+
+    open fun startAnimation() {
+        animationHandler.removeCallbacks(tickRunnable)
+        animationHandler.postDelayed(tickRunnable, tickRate.toLong())
+    }
+
+    open fun stopAnimation() {
+        animationHandler.removeCallbacks(tickRunnable)
+    }
+
+    open fun onAnimationUpdate() {
+        animationHandler.postDelayed(tickRunnable, tickRate.toLong())
+    }
 
     private companion object {
         private val LOG_TAG = Glyph::class.java.simpleName

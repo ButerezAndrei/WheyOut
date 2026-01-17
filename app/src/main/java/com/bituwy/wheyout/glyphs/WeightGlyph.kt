@@ -3,7 +3,7 @@ package com.bituwy.wheyout.glyphs
 import android.content.Context
 import com.nothing.ketchum.GlyphMatrixManager
 
-class WeightGlyph : Glyph("Weight"), Animatable by GlyphAnimator() {
+class WeightGlyph : Glyph("Weight") {
     private lateinit var matrixManager: GlyphMatrixManager
 
     override fun performOnServiceConnected(

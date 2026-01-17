@@ -19,9 +19,7 @@ import java.time.temporal.ChronoUnit
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-class CaloriesGlyph(
-    val glyphAnimator: GlyphAnimator = GlyphAnimator()
-) : Glyph("Calories"), Animatable by glyphAnimator {
+class CaloriesGlyph() : Glyph("Calories") {
     private companion object {
         private const val SCREEN_LENGTH = 25
 
@@ -70,7 +68,7 @@ class CaloriesGlyph(
 
         val remainingCaloriesText = glyphHelper.buildCenteredText(
             SCREEN_LENGTH,
-            "${remainingCalories} kcal ${nutritionalValues["proteins"]?.toInt()}p ${nutritionalValues["carbs"]?.toInt()}}c ${nutritionalValues["fats"]?.toInt()}}f",
+            "${remainingCalories} kcal ${nutritionalValues["proteins"]?.toInt()}p ${nutritionalValues["carbs"]?.toInt()}c ${nutritionalValues["fats"]?.toInt()}f",
             GlyphMatrixHelper.CenterOptions.VERTICAL
         )
         textFrame.setTop(remainingCaloriesText)
@@ -148,13 +146,12 @@ class CaloriesGlyph(
     }
 
     override fun startAnimation() {
-        glyphAnimator.startAnimation()
+        super.startAnimation()
         circleAnimated = true
     }
 
     override fun onAnimationUpdate() {
-        // TODO: Double check that animationHandler is the one implemented in glypAnimator or do i need to use glypAnimator.animationHandler throughout the code
-        // TODO: I think we can move even more of the animation logic into the GlyphAnimator
+        // TODO: I think I can move even more of the animation logic into Glyph
         if (circleAnimated) {
             advanceCircle()
             matrixManager.setMatrixFrame(animationFrameBuilder.build(applicationContext).render())
@@ -163,7 +160,7 @@ class CaloriesGlyph(
     }
 
     override fun stopAnimation() {
-        glyphAnimator.stopAnimation()
+        super.stopAnimation()
         circleAnimated = false
     }
 
@@ -172,5 +169,4 @@ class CaloriesGlyph(
         stopAnimation()
         backgroundScope.cancel()
     }
-
 }
