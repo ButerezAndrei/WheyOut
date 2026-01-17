@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -25,6 +26,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -92,66 +95,48 @@ class MainActivity : ComponentActivity() {
         setContent {
             // TODO: Fix the text and background to follow phone theming (i.e dark mode) to be consistent with the ListItem behaviour
             WheyOutTheme {
-
-                // TODO: [BUG] The buttons still show if the user manually enables Permissions, not vice-vers because Android forces a reset when permissions are disabled
-                LaunchedEffect(Unit) {
-                    isPermissionGranted = hasPermissions()
-                }
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 10.dp, vertical = 32.dp),
-                    verticalArrangement = Arrangement.Top,
-                    horizontalAlignment = Alignment.CenterHorizontally
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
                 ) {
-                    Text("WheyOut Glyphs", fontSize = 35.sp, fontFamily = ndotFontFamily, fontWeight = FontWeight.Bold)
-                    ListItem(
-                        headlineContent = { Text("Calories Glyph", fontFamily = ndotFontFamily, fontWeight = FontWeight.Bold) },
-                        leadingContent = {
-                            GlyphPreview(R.drawable.glyph_matrix_calories_preview)
-                        },
-                        trailingContent = {
-                            IconButton(
-                                onClick = {
-                                    Log.d(TAG, "Permissions requested for Calories Glyph")
-                                    if(!isPermissionGranted){
-                                        requestPermissions()
+                    // TODO: [BUG] The buttons still show if the user manually enables Permissions, not vice-vers because Android forces a reset when permissions are disabled
+                    LaunchedEffect(Unit) {
+                        isPermissionGranted = hasPermissions()
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .safeContentPadding(),
+                        verticalArrangement = Arrangement.Top,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("WheyOut Glyphs", fontSize = 35.sp, fontFamily = ndotFontFamily, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                        ListItem(
+                            headlineContent = { Text("Calories Glyph", fontFamily = ndotFontFamily, fontWeight = FontWeight.Bold) },
+                            leadingContent = {
+                                GlyphPreview(R.drawable.glyph_matrix_calories_preview)
+                            },
+                            trailingContent = {
+                                IconButton(
+                                    onClick = {
+                                        Log.d(TAG, "Permissions requested for Calories Glyph")
+                                        if(!isPermissionGranted){
+                                            requestPermissions()
+                                        }
+                                    }
+                                ) {
+                                    if (!isPermissionGranted) {
+                                        Icon(
+                                            Icons.Default.Error,
+                                            "Need Permissions",
+                                            tint = Color.Red
+                                        )
                                     }
                                 }
-                            ) {
-                                if (!isPermissionGranted) {
-                                    Icon(
-                                        Icons.Default.Error,
-                                        "Need Permissions",
-                                        tint = Color.Red
-                                    )
-                                }
                             }
-                        }
-                    )
-                    HorizontalDivider()
-//                    ListItem(
-//                        headlineContent = { Text("Weight Tracking Glyph") },
-//                        leadingContent = {
-//                            GlyphPreview(R.drawable.glyph_matrix_calories_preview)
-//                        },
-//                        trailingContent = {
-//                            IconButton(
-//                                onClick = {
-//                                    Log.d(TAG, "Permissions requests for Weight Glyph")
-//                                }
-//                            ) {
-//                                if (!isPermissionGranted) {
-//                                    Icon(
-//                                        Icons.Default.Error,
-//                                        "Need Permissions",
-//                                        tint = Color.Red
-//                                    )
-//                                }
-//                            }
-//                        }
-//                    )
+                        )
+                    }
                 }
             }
         }
